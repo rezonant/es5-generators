@@ -1,0 +1,28 @@
+{
+  "name": "es5generators",
+  "version": "0.0.1",
+  "description": "Provides non-coroutine generators in an ES5-style package",
+  "main": "Generator.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "./node_modules/.bin/karma start --single-run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://aether.tirrin.com:8081/liam/es5generators.git"
+  },
+  "keywords": [
+    "es5",
+    "generators"
+  ],
+  "author": "William Lahti <wilahti@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "jasmine-core": "^2.3.4",
+    "karma": "^0.13.3",
+    "karma-chrome-launcher": "^0.2.0",
+    "karma-jasmine": "^0.3.6"
+  }
+}

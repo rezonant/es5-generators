@@ -1,0 +1,22 @@
+{
+  "name": "es5generators",
+  "version": "0.0.1",
+  "authors": [
+    "William Lahti <wilahti@gmail.com>"
+  ],
+  "description": "Provides non-coroutine generators in an ES5-style package",
+  "main": "Generator.js",
+  "keywords": [
+    "generators",
+    "es5"
+  ],
+  "license": "MIT",
+  "homepage": "http://github.com/rezonant/es5generators",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
