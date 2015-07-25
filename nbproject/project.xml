@@ -3,7 +3,7 @@
     <type>org.netbeans.modules.web.clientproject</type>
     <configuration>
         <data xmlns="http://www.netbeans.org/ns/clientside-project/1">
-            <name>StreamablePromises</name>
+            <name>ES5 Generators [es5generators]</name>
         </data>
     </configuration>
 </project>
