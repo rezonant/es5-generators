@@ -1,15 +1,23 @@
 /**
- * Streamable promises 
+ * Generators in an ES5-style. A sort of streamable promise.
  * 
- * These are promises which always deliver arrays, but also support returning each individual item
- * as they are obtained in addition to all once the promise is finally resolved.
+ * These are promises which always deliver many results, but also support returning each 
+ * individual item as they are obtained in addition to all once the promise is finally resolved.
  * They are similar to ES6 generators, but are asynchronous via callbacks instead of co-routines.
  * 
- * @param {type} cb
+ * These have limited support for ES6 generators as well -- You can pass an ES6 generator instance 
+ * or generator function (as long as it takes no arguments) into the Generator constructor and then
+ * can use the ES5-style API.
+ * 
+ * The reverse (using ES5 generators as ES6 generators when running ES6) is not currently possible, 
+ * though if a good way to implement it is found, it may be added later. This is unlikely though.
+ * 
+ * @param function(done,reject,emit)|function* cb
  * @returns {Generator}
  */
-
 function Generator(cb) {
+	
+	
 	var self = this;
 	
 	self._registeredEmits = [];
@@ -50,6 +58,30 @@ function Generator(cb) {
 	// Items are NOT stored after they are emitted, if you miss it you won't get it.
 	
 	setTimeout(function() {
+		
+		// Can't iterate over a generator function, only
+		// a generator instance. Start the generator, assuming 
+		// it takes no arguments as there is no other option.
+		// We'll act as if that instance was passed in.
+
+		if (cb.constructor.name == 'GeneratorFunction') {
+			cb = cb();
+		}
+		
+		// We can wrap ES6 generators too.
+		
+		if (cb.constructor.name == 'GeneratorFunctionPrototype') {
+			var item;
+			while (!(item = cb.next()).done) {
+				emit(item.value);
+			}
+			done();
+			
+			return;
+		} 
+		
+		// Standard ES5 route.
+		
 		cb(done, reject, emit);
 	}, 1);
 }
@@ -319,8 +351,9 @@ Generator.prototype.done = function(cb) {
  * NOTE that this will cause the Generator to store an array of all results emitted 
  * between the registration of this function and when the generator complets (.done()).
  * 
- * This will cause O(N) memory instead of O(1), so only use this if you don't mind storing
- * all generator results into an array (very very bad idea for an infinite set).
+ * This will cause O(N) memory usage instead of O(1), so only use this if you don't 
+ * mind storing all generator results into an array (very very bad idea for an 
+ * infinite set for example).
  * 
  * @param {type} cb
  * @returns {Promise}
