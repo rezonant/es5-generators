@@ -33,12 +33,14 @@ new Generator(function(done, reject, emit) {
 });
 ```
 
+### Wrapping other data types
 Generators can wrap other data types.
 ```js
 new Generator([1,2,3]); // emits 1, 2, 3
-new Generator(Promise.resolve(123); // emits 123
+new Generator(Promise.resolve(123)); // emits 123
 ```
 
+### Consuming a Generator
 You can iterate over a Generator as follows:
 ```js
 var generator = someKindOfQuery();
@@ -49,14 +51,23 @@ generator.emit(function(item) {
 });
 ```
 
+### Exceptions/Rejections
 Exceptions and rejections work like they do with Promises:
 ```js
 var generator = aFailingQuery();
 generator.catch(function(err) {
 	console.log('The generator faulted');
 });
+
+var generator = new Generator(function(done, reject, emit) {
+    reject({message:"Rejection message"});
+    // Generator also catches exceptions
+    throw {message: "Exception message"};
+});
+
 ```
 
+### Promise Chaining
 You can get all items at once in an array, and even start a 
 promise chain off of a generator's completion:
 
@@ -82,5 +93,6 @@ To test this package:
 
 ### License
 This software is provided under the terms of the MIT License. See COPYING for details.
+
 
 
