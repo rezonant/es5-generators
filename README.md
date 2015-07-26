@@ -8,17 +8,17 @@ These do not use ES6 iterators or generators, so they are useful where wider com
 
 Node (server-side):
 ```sh
-npm install es5generators
+npm install es5-generators
 ```
 
-Now use ```require('es5generators')``` to obtain the Generator class.
+Now use ```require('es5-generators')``` to obtain the Generator class.
 
 Bower (client-side, browser):
 ```sh
-bower install es5generators
+bower install es5-generators
 ```
 
-Now include ```bower_components/es5generators/Generator.js``` either directly on your page, within your Javascript build step, or using ```require('./bower_components/es5generators/Generator.js')``` if you are using Browserify.
+Now include ```bower_components/es5-generators/Generator.js``` either directly on your page, within your Javascript build step, or using ```require('./bower_components/es5-generators/Generator.js')``` if you are using Browserify.
 
 ### Usage
 
@@ -31,6 +31,12 @@ new Generator(function(done, reject, emit) {
 	emit(3);
 	done();
 });
+```
+
+Generators can wrap other data types.
+```js
+new Generator([1,2,3]); // emits 1, 2, 3
+new Generator(Promise.resolve(123); // emits 123
 ```
 
 You can iterate over a Generator as follows:
@@ -50,6 +56,7 @@ generator.catch(function(err) {
 	console.log('The generator faulted');
 });
 ```
+
 You can get all items at once in an array, and even start a 
 promise chain off of a generator's completion:
 
