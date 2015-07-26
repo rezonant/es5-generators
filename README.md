@@ -2,9 +2,6 @@
 
 This package provides Promise-like generators which fit natively in ES5. If you are targeting ES6 directly or using transpilation to ES5, you might consider using the standard generators instead. However these generators will work within ES5 runtimes without any transpilation dependencies, which might be useful.
 
-### Version
-0.0.1
-
 ### Installation
 
 Node (server-side):
