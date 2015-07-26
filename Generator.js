@@ -80,6 +80,21 @@ function Generator(cb) {
 			return;
 		} 
 		
+		// We can wrap arrays
+		
+		if (cb.constructor.name == 'Array') { 
+			var items = cb;
+			var position = 0;
+			
+			for (var i = 0, max = items.length; i < max; ++i) {
+				emit(items[i]);
+			}
+
+			done();
+			
+			return;
+		}
+		
 		// Standard ES5 route.
 		
 		cb(done, reject, emit);

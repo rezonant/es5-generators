@@ -74,6 +74,18 @@ describe("Generator", function() {
 			return 'foo';
 		}).then(function(shouldBeFoo) {
 			expect(shouldBeFoo).toBe('foo');
+			_done(); 
+		});
+	});
+	
+	it("should accept an array and emit its items", function(_done) {
+		var generator = new Generator([1,2,3]);
+		
+		var i = 1;
+		
+		generator.emit(function(item) {
+			expect(item).toBe(i++);
+		}).done(function() {
 			_done();
 		});
 	});
