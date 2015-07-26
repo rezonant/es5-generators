@@ -18,6 +18,29 @@ bower install es5generators
 
 Now include ```bower_components/es5generators/Generator.js``` either directly on your page, within your Javascript build step, or using ```require('./bower_components/es5generators/Generator.js')``` if you are using Browserify.
 
+### Usage
+
+You can create a Generator in a similar way as a Promise:
+
+```js
+new Generator(function(done, reject, emit) {
+	emit(1);
+	emit(2);
+	emit(3);
+	done();
+});
+```
+
+You can iterate over a Generator as follows:
+```js
+var generator = someKindOfQuery();
+generator.emit(function(item) {
+	console.log(item);
+}).done(function() {
+	console.log('--finished--');
+});
+```
+
 ### Testing
 To test this package:
 ```npm test```
