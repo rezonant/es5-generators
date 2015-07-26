@@ -38,6 +38,10 @@ module.exports = function(grunt) {
       }
 	},
 
+	publish: {
+		
+	},
+
     uglify: {
       options: {
         banner: '/*! <%= pkg.name %> <%= grunt.template.today("yyyy-mm-dd") %> */\n',
@@ -60,6 +64,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-karma');
+  grunt.loadNpmTasks('grunt-publish');
 
   // Default task(s).
   grunt.registerTask('default', ['uglify']);
