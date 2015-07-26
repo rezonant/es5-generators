@@ -40,75 +40,72 @@ function Generator(cb) {
 	};
 	
 	var done = function() {
-		callback(self._registeredDones, []);
+		setTimeout(function() {
+			callback(self._registeredDones, []);
+		}, 1);
 	};
 	
 	var reject = function(error) {
-		callback(self._registeredCatches, [error]);
+		setTimeout(function() {
+			callback(self._registeredCatches, [error]);
+		}, 1);
 	};
 	
 	var emit = function(item) {
-		callback(self._registeredEmits, [item]);
+		setTimeout(function() {
+			callback(self._registeredEmits, [item]);
+		}, 1);
 	};
 	
-	// Unlike promises, callbacks to generator functions _must_ be asynchronous
-	// to ensure anyone even has a chance to register for the first item in some cases.
-	// Since this is done on a timeout, it ensures that you have until control is released
-	// from your function to register emits, dones, and thens before the first item is generated.
-	// Items are NOT stored after they are emitted, if you miss it you won't get it.
-	
-	setTimeout(function() {
-		
-		// Can't iterate over a generator function, only
-		// a generator instance. Start the generator, assuming 
-		// it takes no arguments as there is no other option.
-		// We'll act as if that instance was passed in.
+	// Can't iterate over a generator function, only
+	// a generator instance. Start the generator, assuming 
+	// it takes no arguments as there is no other option.
+	// We'll act as if that instance was passed in.
 
-		if (cb.constructor.name == 'GeneratorFunction') {
-			cb = cb();
-		}
-		
-		// We can wrap ES6 generators too.
-		
-		if (cb.constructor.name == 'GeneratorFunctionPrototype') {
-			var item;
-			while (!(item = cb.next()).done) {
-				emit(item.value);
-			}
-			done();
-			
-			return;
-		} 
-		
-		// We can wrap arrays
-		
-		if (cb.constructor.name == 'Array') { 
-			var items = cb;
-			var position = 0;
-			
-			for (var i = 0, max = items.length; i < max; ++i) {
-				emit(items[i]);
-			}
+	if (cb.constructor.name == 'GeneratorFunction') {
+		cb = cb();
+	}
 
+	// We can wrap ES6 generators too.
+
+	if (cb.constructor.name == 'GeneratorFunctionPrototype') {
+		var item;
+		while (!(item = cb.next()).done) {
+			emit(item.value);
+		}
+		done();
+
+		return;
+	} 
+
+	// We can wrap arrays
+
+	if (cb.constructor.name == 'Array') { 
+		var items = cb;
+		var position = 0;
+
+		for (var i = 0, max = items.length; i < max; ++i) {
+			emit(items[i]);
+		}
+
+		done();
+
+		return;
+	}
+
+	// We can wrap promises
+
+	if (cb.constructor.name == 'Promise') {
+		cb.then(function(result) {
+			emit(result);
 			done();
-			
-			return;
-		}
-		
-		// We can wrap promises
-		
-		if (cb.constructor.name == 'Promise') {
-			cb.then(function(result) {
-				emit(result);
-				done();
-			});
-			return;
-		}
-		
-		// Standard ES5 route.
-		
-		cb(done, reject, emit);
-	}, 1);
+		});
+		return;
+	}
+
+	// Standard ES5 route.
+
+	cb(done, reject, emit);
 }
 
 // Integrate with the environment.
@@ -135,22 +132,55 @@ Generator.InvalidSubpromiseResolution = {
 // Static methods
 
 /**
- * Union the results of the promises into a single Generator
+ * Create a generator to emit a single value as given.
+ * @param {type} value
+ * @returns {Generator}
+ */
+Generator.resolve = function(value) {
+	return new Generator(function(done, reject, emit) {
+		emit(value);
+		done();
+	});
+}
+	
+/**
+ * Create a generator which emits for each item of the promise's array result.
+ * If the promise does not provide an array, this will break.
+ */
+Generator.splitPromise = function(promise) {
+	return new Generator(function(done, reject, emit) {
+		promise.then(function(result) {
+			for (var i = 0, max = result.length; i < max; ++i)
+				emit(result[i]);
+			done();
+		});
+	});
+};
+
+/**
+ * Union the results of the given generators into a single generator
  * 
  * @param {type} promises
  * @returns {undefined}
  */
-Generator.union = function(promises) {
-	return new Generator(function(resolve, reject, emit) {
-		for (var i = 0, max = promises.length; i < max; ++i) {
-			var promise = promises[i];
+Generator.union = function(generators) {
+	return new Generator(function(done, reject, emit) {
+		var promises = [];
+		
+		for (var i = 0, max = generators.length; i < max; ++i) {
+			var generator = generators[i];
 
-			if (promise.emit) {
-				promise.emit(function(item) {
+			if (generator.emit) {
+				generator.emit(function(item) {
 					emit(item);
 				});
+				
+				promises.push(generator.done());
+				
 			} else {
-				promise.then(function(items) {
+				Console.log('WARNING: Passing promises directly to Generator.union() is deprecated. Please wrap the promise in a Generator first.');
+				
+				promises.push(generator.then(function(items) {
 					if (typeof items !== 'object' || items.length === undefined) {
 						throw Generator.InvalidSubpromiseResolution;
 					}
@@ -158,9 +188,14 @@ Generator.union = function(promises) {
 					for (var j = 0, jMax = items.length; j < jMax; ++j) {
 						emit(items[j]);
 					}
-				});
+				}));
 			}
 		}
+		
+		Promise.all(promises).then(function() {
+			done();
+		});
+		
 	});
 };
 
@@ -228,17 +263,17 @@ Generator.exclude = function(setA, setB, comparator)
  * @param {type} hasher
  * @returns {undefined}
  */
-Generator.intersectByHash = function(promises, hasher) {
+Generator.intersectByHash = function(generators, hasher) {
 	
 	return new Generator(function(resolve, reject, emit) {
 		var map = {};
 		var handlers = [];
 		
-		for (var i = 0, max = promises.length; i < max; ++i) {
-			var promise = promises[i];
+		for (var i = 0, max = generators.length; i < max; ++i) {
+			var generator = generators[i];
 			
 			var handleEmit = function(item) {
-				var id = identify(item);
+				var id = hasher(item);
 				var count = 0;
 				if (map[id])
 					count = map[id];
@@ -246,19 +281,21 @@ Generator.intersectByHash = function(promises, hasher) {
 				count += 1;
 				map[id] = count;
 				
-				if (count == promises.length) {
+				if (count == generators.length) {
 					emit(item);
 				}
 			}
 			
-			if (promise.emit) {
+			if (generator.emit) {
 				handlers.push(new Promise(function(resolve, reject) {
-					handlers.emit(handleEmit).then(function() {
+					generator.emit(handleEmit).done(function() {
 						resolve();
 					});
 				}));
 			} else {
-				handlers.push(promise.then(function(items) {
+				console.log('WARNING: Passing promises to Generator.intersectByHash() is deprecated. Please wrap it in a Generator first.');
+				
+				handlers.push(generator.then(function(items) {
 					for (var j = 0, jMax = items.length; j < jMax; ++j) {
 						handleEmit(items[j]);
 					}
@@ -281,14 +318,14 @@ Generator.intersectByHash = function(promises, hasher) {
  * @param {type} identify
  * @returns {undefined}
  */
-Generator.intersectByComparison = function(promises, comparator) {
+Generator.intersectByComparison = function(generators, comparator) {
 	
 	return new Generator(function(resolve, reject, emit) {
 		var handlers = [];
 		var distinctItems = [];
 		
-		for (var i = 0, max = promises.length; i < max; ++i) {
-			var promise = promises[i];
+		for (var i = 0, max = generators.length; i < max; ++i) {
+			var generator = generators[i];
 			
 			var handleEmit = function(item) {
 				var found = false;
@@ -299,7 +336,7 @@ Generator.intersectByComparison = function(promises, comparator) {
 					if (comparator(distinctItem.item, item)) {
 						distinctItem.count += 1;
 						
-						if (!distinctItem.emitted && distinctItem.count == promises.length) {
+						if (!distinctItem.emitted && distinctItem.count == generators.length) {
 							distinctItem.emitted = true;
 							emit(distinctItem.item);
 						}
@@ -318,7 +355,7 @@ Generator.intersectByComparison = function(promises, comparator) {
 					emitted: false
 				};
 				
-				if (distinctItem.count == promises.length) {
+				if (distinctItem.count == generators.length) {
 					emit(distinctItem.item);
 					distinctItem.emitted = true;
 				}
@@ -326,14 +363,14 @@ Generator.intersectByComparison = function(promises, comparator) {
 				distinctItems.push(distinctItem);
 			}
 			
-			if (promise.emit) {
+			if (generator.emit) {
 				handlers.push(new Promise(function(resolve, reject) {
-					promise.emit(handleEmit).then(function() {
+					generator.emit(handleEmit).then(function() {
 						resolve();
 					});
 				}));
 			} else {
-				handlers.push(promise.then(function(items) {
+				handlers.push(generator.then(function(items) {
 					for (var j = 0, jMax = items.length; j < jMax; ++j) {
 						handleEmit(items[j]);
 					}
@@ -366,7 +403,25 @@ Generator.prototype.catch = function(cb) {
 	return this;
 };
 
+/**
+ * Pass a callback function or pass no arguments to receive
+ * a Promise for completion of the generator.
+ * 
+ * @param {type} cb
+ * @returns {Promise|Generator.prototype}
+ */
 Generator.prototype.done = function(cb) {
+	if (!cb) {
+		var self = this;
+		return new Promise(function(resolve, reject) {
+			self.done(function() {
+				resolve();
+			}).catch(function(err) {
+				reject(err);
+			});
+		});
+	}
+	
 	this._registeredDones.push(cb);
 	return this;
 };

@@ -103,3 +103,130 @@ describe("Generator", function() {
 		});
 	});
 });
+
+describe("Generator.resolve()", function() {
+	it("provides a Generator which emits the value passed", function(_done) {
+		Generator.resolve(123).emit(function(value) {
+			expect(value).toBe(123);
+		}).done(function() {
+			_done();
+		});
+	});
+});
+describe('Generator.splitPromise()', function() {
+	it("emits each item of a promise's array result", function(_done) {
+		var expectedItems = [1,2,3];
+		var index = 0;
+		
+		Generator.splitPromise(Promise.resolve([1,2,3])).emit(function(item) {
+			expect(item).toBe(expectedItems[index++]);
+		}).done(function() {
+			expect(index).toBe(expectedItems.length);
+			_done();
+		});
+	});
+});
+describe("Generator.union()", function() {
+	it("provides a Generator which emits the values of all given generators", function(_done) {
+		var items = {};
+		for (var i = 1, max = 6; i <= max; ++i) {
+			items[i] = true;
+		}
+		
+		Generator.union([
+			new Generator([1,2,3]),
+			new Generator([4,5,6])
+		]).emit(function(value) {
+			expect(typeof items[value]).not.toBe('undefined');
+			delete items[value];
+		}).done(function() {
+			for (var i = 1, max = 6; i <= max; ++i)
+				expect(typeof items[i]).toBe('undefined');
+			_done();
+		});
+	});
+});
+describe("Generator.exclude()", function() {
+	it("provides a Generator which emits the values of setA which are not in setB", function(_done) {
+		var count = 0;
+		Generator.exclude(
+			new Generator([1,2,3]),
+			new Generator([1,3])
+		).emit(function(value) {
+			++count;
+			expect(value).toBe(2);
+		}).done(function() {
+			expect(count).toBe(1);
+			_done();
+		});
+	});
+	it("can take a comparator function", function(_done) {
+		var count = 0;
+		Generator.exclude(
+			new Generator([{id:1},{id:2},{id:3}]),
+			new Generator([{id:1},{id:3}]),
+			function(a,b) {
+				return a.id == b.id;
+			}
+		).emit(function(item) {
+			++count;
+			expect(item.id).toBe(2);
+		}).done(function() {
+			expect(count).toBe(1);
+			_done();
+		});
+	});
+});
+
+describe('Generator.intersectByHash()', function() {
+	it('provides a Generator of A intersected with B', function(_done) {
+		
+		var expectedItems = [2,3,6];
+		var index = 0;
+		
+		Generator.intersectByHash(
+			[
+				new Generator([{id:6},{id:1},{id:2},{id:3}              ]),
+				new Generator([              {id:2},{id:3},{id:5},{id:6}])
+			],
+			function(item) {
+				return item.id
+			}
+		).emit(function(item) {
+			//console.log('emitted '+item.id);
+			expect(index < expectedItems.length).toBe(true);
+			expect(item.id).toBe(expectedItems[index]);
+			++index;
+		}).done(function() {
+			expect(index).toBe(expectedItems.length);
+			_done();
+		});
+	
+	});
+});
+describe('Generator.intersectByComparison()', function() {
+	it('provides a Generator of A intersected with B', function(_done) {
+		
+		var expectedItems = [2,3,6];
+		var index = 0;
+		
+		Generator.intersectByComparison(
+			[
+				new Generator([{id:6},{id:1},{id:2},{id:3}              ]),
+				new Generator([              {id:2},{id:3},{id:5},{id:6}])
+			],
+			function(a, b) {
+				return a.id == b.id;
+			}
+		).emit(function(item) {
+			//console.log('emitted '+item.id);
+			expect(index < expectedItems.length).toBe(true);
+			expect(item.id).toBe(expectedItems[index]);
+			++index;
+		}).done(function() {
+			expect(index).toBe(expectedItems.length);
+			_done();
+		});
+	
+	});
+});
