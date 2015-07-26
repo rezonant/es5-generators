@@ -95,6 +95,16 @@ function Generator(cb) {
 			return;
 		}
 		
+		// We can wrap promises
+		
+		if (cb.constructor.name == 'Promise') {
+			cb.then(function(result) {
+				emit(result);
+				done();
+			});
+			return;
+		}
+		
 		// Standard ES5 route.
 		
 		cb(done, reject, emit);

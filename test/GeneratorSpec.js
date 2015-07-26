@@ -89,4 +89,17 @@ describe("Generator", function() {
 			_done();
 		});
 	});
+	
+	it("should accept a promise and emit its result", function(_done) {
+		var generator = new Generator(Promise.resolve(123));
+		
+		var i = 0; 
+		
+		generator.emit(function(item) {
+			i += item;
+		}).done(function() {
+			expect(i).toBe(123);
+			_done();
+		});
+	});
 });
