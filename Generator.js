@@ -121,12 +121,12 @@ if (typeof module !== 'undefined')
 Generator.InvalidResolution = {
 	error: 'streamablePromise-invalid-resolution',
 	message: 'You cannot resolve() a Generator with a value. '+
-			 'The value of a streamable promise is always the array of yielded items'
+			 'The Promise value of a generator is always an array of yielded items'
 };
 Generator.InvalidSubpromiseResolution = {
 	error: 'streamablePromise-invalid-subresolution',
 	message: 'While attempting to combine the results of multiple promises, '+
-			 'one of the (non-streamable) promises returned an item which was not an array.'
+			 'one of the promises returned an item which was not an array.'
 };
 
 // Static methods
@@ -254,7 +254,7 @@ Generator.exclude = function(setA, setB, comparator)
 }
 
 /**
- * Intersects the given set of streamable promises, using the given "hasher" function
+ * Intersects the given set of generators, using the given "hasher" function
  * to produce an ID string for each object. This approach is much more efficient than intersecting
  * by comparison (intersectByComparison()), so this should be used instead whenever possible.
  * Efficiency: ?
@@ -310,7 +310,7 @@ Generator.intersectByHash = function(generators, hasher) {
 }
 
 /**
- * Intersects the given set of streamable promises, using the given "comparator" function
+ * Intersects the given set of generators, using the given "comparator" function
  * to determine if two objects are equal. This form of intersect operation can be much 
  * less efficient than intersection by identity (intersectByIdentity). Efficiency n^2
  * 
@@ -387,7 +387,7 @@ Generator.intersectByComparison = function(generators, comparator) {
 // Instance methods
 
 /**
- * Register a callback for the emit event, when the streamable promise
+ * Register a callback for the emit event, when the generator
  * emits an item.
  * 
  * @param {type} cb
@@ -398,6 +398,13 @@ Generator.prototype.emit = function(cb) {
 	return this;
 };
 
+/**
+ * Register a callback for the catch event, when the generator encounters
+ * an exception or error.
+ * 
+ * @param {type} cb
+ * @returns {Generator.prototype}
+ */
 Generator.prototype.catch = function(cb) {
 	this._registeredCatches.push(cb);
 	return this;
