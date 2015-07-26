@@ -20,7 +20,7 @@ module.exports = function(grunt) {
 		options: {
 			files: ["package.json", "bower.json"],
 			updateConfigs: ["pkg"],
-			commitFiles: ['package.json', 'bower.json', 'dist/skate.js', 'dist/skate.min.js'],
+			commitFiles: ['package.json', 'bower.json', 'dist/Generator.min.js'],
 			commitMessage: 'Release v%VERSION%',
 			createTag: true,
 			tagName: 'v%VERSION%',
