@@ -1,7 +1,7 @@
 {
-  "name": "es5generators",
+  "name": "es5-generators",
   "version": "0.0.3",
-  "description": "Provides non-coroutine generators in an ES5-style package",
+  "description": "Provides non-ES6 non-coroutine generators in an ES5-style package",
   "main": "Generator.js",
   "directories": {
     "test": "test"
