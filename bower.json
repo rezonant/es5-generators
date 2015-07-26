@@ -14,8 +14,13 @@
   "homepage": "http://github.com/rezonant/es5generators",
   "ignore": [
     "**/.*",
+	"Gruntfile.js",
+	"karma.conf.js",
+	"nbproject",
     "node_modules",
     "bower_components",
+	"web",
+	"package.json",
     "test",
     "tests"
   ]
