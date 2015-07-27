@@ -8,6 +8,54 @@ describe("Generator", function() {
 			_done();
 		});
 	});
+
+	it("can be cancelled", function(_done) {
+		var count = 0;
+		new Generator(function(done, reject, emit) {
+			var cancelled = false;
+			function cancel() {
+				cancelled = true;
+			}
+			var next = 1;
+			var interval = setInterval(function() {
+				if (!cancelled) {
+					emit(next++, cancel);
+				}
+				
+				if (cancelled || next >= 4) {
+					done();
+					clearInterval(interval);
+				}
+				
+			}, 100);
+			
+		}).emit(function(item, cancel) {
+			count++;
+			expect(item).toBe(1); 
+			cancel();
+		}).done(function() {
+			expect(count).toBe(1);
+			_done();
+		});
+	});
+	
+	it("calls emit listeners for each item emitted", function(_done) {
+		var generator = new Generator(function(done, reject, emit) {
+			emit(1);
+			emit(2);
+			emit(3);
+			done();
+		});
+		
+		var ix = 1;
+		generator.emit(function(item) {
+			expect(item).toBe(ix);
+			ix += 1;
+			
+			if (ix == 3)
+				_done();
+		});
+	});
 	
 	it("calls emit listeners for each item emitted", function(_done) {
 		var generator = new Generator(function(done, reject, emit) {
@@ -27,15 +75,21 @@ describe("Generator", function() {
 		});
 	});
 	
-	it("calls done listeners after the generator function finishes", function(_done) {
+	it("can deregister a listener", function(_done) {
 		var generator = new Generator(function(done, reject, emit) {
 			emit(1);
 			emit(2);
 			emit(3);
 			done();
 		});
-		
-		generator.done(function() {
+		var cb;
+		var count = 0;
+		generator.emit(cb = function(item) {
+			expect(item).toBe(1);
+			++count;
+			generator.deregister('emit', cb);
+		}).done(function() {
+			expect(count).toBe(1);
 			_done();
 		});
 	});

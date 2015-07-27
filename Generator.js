@@ -24,15 +24,6 @@ function Generator(cb) {
 	self._registeredCatches = [];
 	self._registeredDones = [];
 	
-	var onEmit = function(item) {
-		var yields = self._emitters;
-		for (var i = 0, max = yields.length; i < max; ++i) {
-			var cb = yields[i];
-			
-			cb.assign();
-		}
-	};
-	
 	var callback = function(fns, args) {
 		for (var i = 0, max = fns.length; i < max; ++i) {
 			fns[i].apply(null, args);
@@ -51,9 +42,9 @@ function Generator(cb) {
 		}, 1);
 	};
 	
-	var emit = function(item) {
+	var emit = function(item, cancel) {
 		setTimeout(function() {
-			callback(self._registeredEmits, [item]);
+			callback(self._registeredEmits, [item, cancel]);
 		}, 1);
 	};
 	
@@ -70,8 +61,12 @@ function Generator(cb) {
 
 	if (cb.constructor.name == 'GeneratorFunctionPrototype') {
 		var item;
-		while (!(item = cb.next()).done) {
-			emit(item.value);
+		var cancelled = false;
+		
+		while (!cancelled && !(item = cb.next()).done) {
+			emit(item.value, function() {
+				cancelled = true;
+			});
 		}
 		done();
 
@@ -83,9 +78,11 @@ function Generator(cb) {
 	if (cb.constructor.name == 'Array') { 
 		var items = cb;
 		var position = 0;
-
+		var cancelled = false;
 		for (var i = 0, max = items.length; i < max; ++i) {
-			emit(items[i]);
+			emit(items[i], function() {
+				cancelled = true;
+			});
 		}
 
 		done();
@@ -97,7 +94,7 @@ function Generator(cb) {
 
 	if (cb.constructor.name == 'Promise') {
 		cb.then(function(result) {
-			emit(result);
+			emit(result, function() { });
 			done();
 		});
 		return;
@@ -390,22 +387,62 @@ Generator.intersectByComparison = function(generators, comparator) {
  * Register a callback for the emit event, when the generator
  * emits an item.
  * 
+ * You may also omit the callback and be returned a promise.
+ * This promise will resolve when the next item is emitted from the 
+ * Generator, but will not be resolved again, because promises only
+ * resolve once.
+ * 
+ * To instead have a recurring handler, you must pass a callback.
+ * 
  * @param {type} cb
  * @returns {Generator.prototype}
  */
 Generator.prototype.emit = function(cb) {
+	if (!cb) {
+		var self = this;
+		return new Promise(function(resolve, reject) {
+			var handler;
+			self.emit(handler = function(item) {
+				resolve(item);
+				
+			});
+		});
+	}
 	this._registeredEmits.push(cb);
 	return this;
+};
+
+Generator.prototype.deregister = function(event, cb) {
+	var map = {
+		emit: this._registeredEmits,
+		catch: this._registeredCatches,
+		done: this._registeredDones
+	};
+	
+	if (map[event].indexOf(cb) >= 0)
+		map[event].splice(map[event].indexOf(cb), 1);
 };
 
 /**
  * Register a callback for the catch event, when the generator encounters
  * an exception or error.
  * 
+ * You may also omit the callback and be returned a promise.
+ * This promise will either resolve to an error or never resolve.
+ * The promise will never reject.
+ * 
  * @param {type} cb
  * @returns {Generator.prototype}
  */
 Generator.prototype.catch = function(cb) {
+	if (!cb) {
+		var self = this;
+		return new Promise(function(resolve) {
+			self.catch(function(err) {
+				resolve(err);
+			});
+		});
+	}
 	this._registeredCatches.push(cb);
 	return this;
 };
@@ -418,6 +455,7 @@ Generator.prototype.catch = function(cb) {
  * @returns {Promise|Generator.prototype}
  */
 Generator.prototype.done = function(cb) {
+	
 	if (!cb) {
 		var self = this;
 		return new Promise(function(resolve, reject) {
